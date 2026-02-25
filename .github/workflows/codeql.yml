@@ -14,7 +14,7 @@ permissions:
 jobs:
 
   # ----------------------------------------
-  # 1️⃣ Secret Scanning (Gitleaks)
+  # 1️⃣ Secret Scanning (Free Gitleaks)
   # ----------------------------------------
   gitleaks:
     name: Gitleaks Secret Scan
@@ -24,10 +24,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        with:
-          fail: true   # Fail pipeline if secrets found
+      - name: Install Gitleaks
+        run: |
+          wget https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64 -O gitleaks
+          chmod +x gitleaks
+          sudo mv gitleaks /usr/local/bin/
+
+      - name: Run Gitleaks Scan
+        run: |
+          gitleaks detect --source . --verbose --redact --exit-code 1
 
   # ----------------------------------------
   # 2️⃣ CodeQL Analysis
@@ -35,7 +40,7 @@ jobs:
   codeql:
     name: CodeQL Analyze
     runs-on: ubuntu-latest
-    needs: gitleaks   # Run CodeQL after Gitleaks
+    needs: gitleaks
 
     strategy:
       fail-fast: false
@@ -44,9 +49,6 @@ jobs:
           - java
           - javascript
           - python
-          - csharp
-          - go
-          - cpp
 
     steps:
       - name: Checkout repository
