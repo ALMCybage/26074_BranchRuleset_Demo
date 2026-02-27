@@ -20,10 +20,25 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: github/codeql-action/init@v3
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
         with:
           languages: java
 
-      - uses: github/codeql-action/analyze@v3
+      # IMPORTANT: compile ALL java files
+      - name: Compile Java source
+        run: |
+          find . -name "*.java" > sources.txt
+          javac @sources.txt
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
