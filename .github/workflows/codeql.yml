@@ -22,8 +22,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
       - uses: github/codeql-action/init@v3
         with:
           languages: java
+
+      - name: Compile Java files
+        run: javac user.java
 
       - uses: github/codeql-action/analyze@v3
