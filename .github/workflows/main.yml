@@ -1,10 +1,12 @@
-name: Frontend CI/CD -Build and Push Docker Image 
+name: Frontend CI
+
 on:
   push:
     branches:
       - main
       - dev
-   
+      - 'feature/*'
+      - 'release/*'
   pull_request:
     branches:
       - main
@@ -12,50 +14,26 @@ on:
   workflow_dispatch:
 
 jobs:
-  frontend-build-and-deploy:
+  frontend-ci:
     runs-on: ubuntu-latest
+
     steps:
-      # Checkout code
       - name: Checkout source code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      # Setup Node.js
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: 18
 
-      # Install & build frontend
-      - name: Install and build frontend
-        run: |
-          npm install --legacy-peer-deps
-          CI='' npm run build
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+        working-directory: ProductApp-UI-main
 
+      - name: Run Tests
+        run: npm test --if-present
+        working-directory: ProductApp-UI-main
 
-      # Set Docker image tag (build number)
-      - name: Set Docker Image Tag
-        run: echo "IMAGE_TAG=${{ github.run_number }}" >> $GITHUB_ENV
-
-      # Build frontend Docker image
-      - name: Build frontend Docker image
-        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/product-app-frontend:${IMAGE_TAG} .
-
-      # Scan frontend image with Trivy
-      - name: Scan frontend image with Trivy
-        uses: aquasecurity/trivy-action@master
-        continue-on-error: true
-        with:
-          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/product-app-frontend:${{ env.IMAGE_TAG }}
-          format: json
-          output: trivy-frontend-report.json
-          exit-code: 1
-          severity: CRITICAL,HIGH
-
-      # Upload Trivy scan report
-      - name: Upload Trivy scan report
-        uses: actions/upload-artifact@v4
-        with:
-          name: trivy-frontend-report
-          path: trivy-frontend-report.json
-
-
+      - name: Build Frontend
+        run: npm run build
+        working-directory: ProductApp-UI-main
