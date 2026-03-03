@@ -1,0 +1,60 @@
+version: "3.3"
+
+services:
+  mysql-db:
+    image: mysql:8.0
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: productdb
+      MYSQL_USER: productuser
+      MYSQL_PASSWORD: productpass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - product-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+
+  backend:
+    build:
+      context: ./ProductApp-API-main
+    container_name: product-backend
+    depends_on:
+      - mysql-db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-db:3306/productdb?useSSL=true&requireSSL=true&enabledTLSProtocols=TLSv1.2,TLSv1.3&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: productuser
+      SPRING_DATASOURCE_PASSWORD: productpass
+    ports:
+      - "8085:8080"
+    networks:
+      - product-network
+
+  frontend:
+    build:
+      context: ./ProductApp-UI-main
+    container_name: product-frontend
+    restart: always
+    environment:
+      # Point frontend to backend service (inside docker network)
+      REACT_APP_API_BASE_URL: http://product-backend:8080
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - product-network
+
+volumes:
+  mysql_data:
+
+networks:
+  product-network:
+    driver: bridge
+
