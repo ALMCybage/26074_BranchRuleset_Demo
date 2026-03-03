@@ -21,16 +21,20 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      # Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: '18'
 
       - name: Install dependencies
         run: npm install --legacy-peer-deps
         working-directory: ThreeTierAppProductAPI/ProductApp-UI-main
 
 
-      - name: Build Frontend
-        run: npm run build
+      # Install & build frontend
+      - name: Install and build frontend
+        run: |
+          npm install --legacy-peer-deps
+          CI='' npm run build
         working-directory: ThreeTierAppProductAPI/ProductApp-UI-main
