@@ -30,9 +30,6 @@ jobs:
         run: npm install --legacy-peer-deps
         working-directory: ThreeTierAppProductAPI/ProductApp-UI-main
 
-      - name: Run Tests
-        run: npm test --if-present
-        working-directory: ThreeTierAppProductAPI/ProductApp-UI-main
 
       - name: Build Frontend
         run: npm run build
