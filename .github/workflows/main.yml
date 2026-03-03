@@ -1,0 +1,61 @@
+name: Frontend CI/CD -Build and Push Docker Image 
+on:
+  push:
+    branches:
+      - main
+      - dev
+   
+  pull_request:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+jobs:
+  frontend-build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout code
+      - name: Checkout source code
+        uses: actions/checkout@v3
+
+      # Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # Install & build frontend
+      - name: Install and build frontend
+        run: |
+          npm install --legacy-peer-deps
+          CI='' npm run build
+
+
+      # Set Docker image tag (build number)
+      - name: Set Docker Image Tag
+        run: echo "IMAGE_TAG=${{ github.run_number }}" >> $GITHUB_ENV
+
+      # Build frontend Docker image
+      - name: Build frontend Docker image
+        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/product-app-frontend:${IMAGE_TAG} .
+
+      # Scan frontend image with Trivy
+      - name: Scan frontend image with Trivy
+        uses: aquasecurity/trivy-action@master
+        continue-on-error: true
+        with:
+          image-ref: ${{ secrets.DOCKERHUB_USERNAME }}/product-app-frontend:${{ env.IMAGE_TAG }}
+          format: json
+          output: trivy-frontend-report.json
+          exit-code: 1
+          severity: CRITICAL,HIGH
+
+      # Upload Trivy scan report
+      - name: Upload Trivy scan report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-frontend-report
+          path: trivy-frontend-report.json
+
+
